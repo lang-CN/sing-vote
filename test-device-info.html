@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>设备信息测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .info-row {
+            margin-bottom: 15px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+        .label {
+            font-weight: bold;
+            color: #333;
+        }
+        .value {
+            font-family: monospace;
+            color: #666;
+            word-break: break-all;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .test-result {
+            margin-top: 20px;
+            padding: 15px;
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 5px;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>设备信息测试页面</h1>
+        <p>此页面用于测试UUID生成和设备指纹识别功能</p>
+        
+        <div id="deviceInfo">
+            <h3>设备信息</h3>
+            <div class="info-row">
+                <div class="label">设备UUID:</div>
+                <div class="value" id="uuid">加载中...</div>
+            </div>
+            <div class="info-row">
+                <div class="label">设备指纹:</div>
+                <div class="value" id="fingerprint">加载中...</div>
+            </div>
+            <div class="info-row">
+                <div class="label">生成时间:</div>
+                <div class="value" id="timestamp">加载中...</div>
+            </div>
+        </div>
+        
+        <div style="margin-top: 20px;">
+            <button onclick="refreshDeviceInfo()">刷新设备信息</button>
+            <button onclick="clearCache()">清除缓存</button>
+            <button onclick="testAPIConnection()">测试API连接</button>
+        </div>
+        
+        <div id="testResult"></div>
+    </div>
+
+    <script type="module">
+        // 生成UUID的简化版本
+        function generateUUID() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                const r = Math.random() * 16 | 0;
+                const v = c === 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+
+        // 生成并缓存设备UUID
+        function getDeviceUUID() {
+            const STORAGE_KEY = 'device_uuid';
+            let deviceUUID = localStorage.getItem(STORAGE_KEY);
+            
+            if (!deviceUUID) {
+                deviceUUID = generateUUID();
+                localStorage.setItem(STORAGE_KEY, deviceUUID);
+            }
+            
+            return deviceUUID;
+        }
+
+        // 生成设备指纹
+        async function generateDeviceFingerprint() {
+            try {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                ctx.textBaseline = 'top';
+                ctx.font = '14px Arial';
+                ctx.fillText('Device fingerprint', 2, 2);
+                
+                const canvasFingerprint = canvas.toDataURL();
+                
+                const fingerprint = {
+                    userAgent: navigator.userAgent,
+                    language: navigator.language,
+                    platform: navigator.platform,
+                    cookieEnabled: navigator.cookieEnabled,
+                    screen: `${screen.width}x${screen.height}x${screen.colorDepth}`,
+                    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                    canvas: canvasFingerprint.slice(-50),
+                    hardwareConcurrency: navigator.hardwareConcurrency,
+                    deviceMemory: navigator.deviceMemory || 'unknown'
+                };
+                
+                const fingerprintString = JSON.stringify(fingerprint);
+                const hashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(fingerprintString));
+                const hashArray = Array.from(new Uint8Array(hashBuffer));
+                const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+                
+                return hashHex.slice(0, 12).match(/.{2}/g).join(':');
+            } catch (error) {
+                console.warn('无法生成设备指纹:', error);
+                return generateFallbackFingerprint();
+            }
+        }
+
+        // 降级方案
+        function generateFallbackFingerprint() {
+            const info = [
+                navigator.userAgent,
+                navigator.language,
+                navigator.platform,
+                screen.width,
+                screen.height,
+                new Date().getTimezoneOffset()
+            ].join('|');
+            
+            let hash = 0;
+            for (let i = 0; i < info.length; i++) {
+                const char = info.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash;
+            }
+            
+            const hex = Math.abs(hash).toString(16).padStart(12, '0').slice(0, 12);
+            return hex.match(/.{2}/g).join(':');
+        }
+
+        // 获取完整设备信息
+        async function getDeviceIdentity() {
+            const uuid = getDeviceUUID();
+            const fingerprint = await generateDeviceFingerprint();
+            
+            return {
+                uuid,
+                fingerprint,
+                timestamp: Date.now()
+            };
+        }
+
+        // 更新界面显示
+        async function updateDeviceInfo() {
+            try {
+                const deviceInfo = await getDeviceIdentity();
+                
+                document.getElementById('uuid').textContent = deviceInfo.uuid;
+                document.getElementById('fingerprint').textContent = deviceInfo.fingerprint;
+                document.getElementById('timestamp').textContent = new Date(deviceInfo.timestamp).toLocaleString('zh-CN');
+            } catch (error) {
+                console.error('获取设备信息失败:', error);
+                document.getElementById('uuid').textContent = '获取失败';
+                document.getElementById('fingerprint').textContent = '获取失败';
+                document.getElementById('timestamp').textContent = '获取失败';
+            }
+        }
+
+        // 全局函数
+        window.refreshDeviceInfo = updateDeviceInfo;
+        
+        window.clearCache = function() {
+            localStorage.removeItem('device_uuid');
+            updateDeviceInfo();
+            showResult('缓存已清除，设备UUID已重新生成', false);
+        };
+
+        window.testAPIConnection = async function() {
+            try {
+                const deviceInfo = await getDeviceIdentity();
+                const response = await fetch('http://localhost:5000/api/user-status', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(deviceInfo)
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    showResult(`API连接成功！用户签字状态: ${data.hasSigned ? '已签字' : '未签字'}`, false);
+                } else {
+                    showResult(`API响应错误: ${response.status} ${response.statusText}`, true);
+                }
+            } catch (error) {
+                showResult(`API连接失败: ${error.message}`, true);
+            }
+        };
+
+        function showResult(message, isError) {
+            const resultDiv = document.getElementById('testResult');
+            resultDiv.innerHTML = `<div class="test-result ${isError ? 'error' : ''}">${message}</div>`;
+        }
+
+        // 页面加载时初始化
+        updateDeviceInfo();
+    </script>
+</body>
+</html>
