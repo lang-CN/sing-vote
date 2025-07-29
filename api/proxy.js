@@ -23,6 +23,8 @@ export default (req, res) => {
             const token = process.env.MY_SECRET;
             if (token) {
                 proxyReq.setHeader('Authorization', `Bearer ${token}`);
+            } else {
+                console.warn('Warning: MY_SECRET is not set in environment variables.');
             }
         },
     })(req, res);
