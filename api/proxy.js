@@ -19,5 +19,11 @@ export default (req, res) => {
             // 如果开启了,那么 /api/user/login 将被转发到 http://180.213.79.236:8180/user/login
             '^/api/': '/',
         },
+        onProxyReq: (proxyReq, req, res) => {
+            const token = process.env.MY_SECRET;
+            if (token) {
+                proxyReq.setHeader('Authorization', `Bearer ${token}`);
+            }
+        },
     })(req, res);
 };
