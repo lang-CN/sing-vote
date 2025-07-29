@@ -1,26 +1,29 @@
-// api/proxy.js
-// 该服务为 vercel serve跨域处理
 import { createProxyMiddleware } from 'http-proxy-middleware';
 
 export default (req, res) => {
     let target = '';
-    // 代理目标地址
-    // 这里使用 backend 主要用于区分 vercel serverless 的 api 路径
-    // target 替换为你跨域请求的服务器 如： http://gmall-h5-api.atguigu.cn
     if (req.url.startsWith('/api')) {
         target = 'http://vote-db.langll.cn';
     }
-    // 创建代理对象并转发请求
-    createProxyMiddleware({
+    
+    // 创建代理配置
+    const proxy = createProxyMiddleware({
         target,
         changeOrigin: true,
         pathRewrite: {
-            // 通过路径重写，去除请求路径中的 `/api`
-            // 如果开启了,那么 /api/user/login 将被转发到 http://180.213.79.236:8180/user/login
             '^/api/': '/',
         },
         onProxyReq: (proxyReq, req, res) => {
-            proxyReq.setHeader('Authorization', `Bearer dad60b3910423ddc915e991f38c2c0d9`);
+            // 确保移除可能存在的旧 Authorization 头
+            proxyReq.removeHeader('Authorization');
+            // 添加新的 Authorization 头
+            proxyReq.setHeader('Authorization', 'Bearer dad60b3910423ddc915e991f38c2c0d9');
+            
+            // 调试：打印设置的请求头，确认是否正确
+            console.log('Proxy headers:', proxyReq.getHeaders());
         },
-    })(req, res);
+    });
+    
+    // 执行代理
+    return proxy(req, res);
 };
