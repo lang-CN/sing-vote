@@ -20,12 +20,7 @@ export default (req, res) => {
             '^/api/': '/',
         },
         onProxyReq: (proxyReq, req, res) => {
-            const token = 'dad60b3910423ddc915e991f38c2c0d9';
-            if (token) {
-                proxyReq.setHeader('Authorization', `Bearer ${token}`);
-            } else {
-                console.warn('Warning: MY_SECRET is not set in environment variables.');
-            }
+            proxyReq.setHeader('Authorization', `Bearer dad60b3910423ddc915e991f38c2c0d9`);
         },
     })(req, res);
 };
