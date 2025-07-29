@@ -20,7 +20,7 @@ export default (req, res) => {
             '^/api/': '/',
         },
         onProxyReq: (proxyReq, req, res) => {
-            const token = process.env.MY_SECRET;
+            const token = 'dad60b3910423ddc915e991f38c2c0d9';
             if (token) {
                 proxyReq.setHeader('Authorization', `Bearer ${token}`);
             } else {
