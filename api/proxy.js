@@ -6,6 +6,9 @@ export default (req, res) => {
         target = 'http://vote-db.langll.cn';
     }
     
+    // 从环境变量获取令牌，如果不存在则使用空字符串作为默认值
+    const authToken = process.env.MY_SECRET || '';
+    
     // 创建代理配置
     const proxy = createProxyMiddleware({
         target,
@@ -14,7 +17,8 @@ export default (req, res) => {
             '^/api/': '/',
         },
         headers: {
-            'Authorization': 'Bearer dad60b3910423ddc915e991f38c2c0d9'
+            // 使用环境变量中的令牌
+            'Authorization': authToken ? `Bearer ${authToken}` : ''
         }
     });
     
