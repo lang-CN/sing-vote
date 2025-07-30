@@ -1,0 +1,11 @@
+
+{
+  "name": "sing-vote-vue",
+  "compatibility_date": "2025-07-30",
+  "main": "./dist/index.js",
+  "workers_dev": true,
+  "site": {
+    "bucket": "./dist",
+    "entry-point": "workers-site"
+  }
+}
