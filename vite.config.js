@@ -8,7 +8,7 @@ import vueDevTools from 'vite-plugin-vue-devtools'
 export default defineConfig(({ command, mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   const authToken = env.MY_SECRET;
-
+  const target_url = env.TARGET_URL;
   return {
     plugins: [
       vue(),
@@ -22,7 +22,7 @@ export default defineConfig(({ command, mode }) => {
     server: {
       proxy: {
         '/api': {
-          target: 'http://127.0.0.1:8787',
+          target: target_url,
           changeOrigin: true,
           rewrite: path => path.replace(/^\/api/, ''),
           configure: (proxy, options) => {
