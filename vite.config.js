@@ -10,6 +10,13 @@ export default defineConfig(({ command, mode }) => {
   const authToken = env.MY_SECRET;
   const target_url = env.TARGET_URL;
   return {
+    build: {
+      lib: {
+        entry: 'src/main.js', // 指定入口文件
+        name: 'CN-LANG', // 库的全局变量名
+        fileName: 'index' // 输出为 index.js
+      }
+    },
     plugins: [
       vue(),
       vueDevTools(),

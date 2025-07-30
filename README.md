@@ -27,3 +27,28 @@ npm run dev
 ```sh
 npm run build
 ```
+
+
+### 部署步骤
+
+1. 安装Cloudflare Wrangler CLI：
+   ```bash
+   npm install -g wrangler
+   ```
+
+2. 登录Cloudflare账号：
+   ```bash
+   wrangler login
+   ```
+
+3. 创建D1数据库：
+   ```bash
+   wrangler d1 create signature-db
+   ```
+
+4. 替换`wrangler.toml`中的`database_id`为实际ID
+
+5. 部署Worker：
+   ```bash
+   wrangler deploy
+   ```
