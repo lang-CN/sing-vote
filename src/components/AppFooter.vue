@@ -23,7 +23,9 @@ export default {
   padding: 20px;
   color: white;
   backdrop-filter: blur(10px);
-  width: 100%;
+  width: 100vw;
+  min-width: 100vw;
+  max-width: 100vw;
   position: fixed;
   bottom: 0;
   left: 0;

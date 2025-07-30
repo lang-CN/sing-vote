@@ -1,96 +1,79 @@
 <template>
   <div class="page-wrapper">
-      <AppHeader />
-      <main class="main-content">
-          <div class="container">
-              <div v-if="statistics" class="statistics">
-                  <h3>签字统计</h3>
-                  <div class="stats-grid">
-                      <div class="stat-item">
-                          <div class="stat-number">{{ statistics.total_signatures }}</div>
-                          <div class="stat-label">已签字人数</div>
-                      </div>
-                  </div>
-                  <div class="progress-bar">
-                      <div class="progress-fill" :style="{ width: statistics.progress + '%' }"></div>
-                  </div>
-              </div>
-              <div class="signatures-header">
-                  <h2>所有签字记录</h2>
-                  <p class="subtitle">以下是所有已签字人员的信息列表</p>
-              </div>
+    <AppHeader />
+    <main class="main-content">
+      <div v-if="pdfLoading" class="pdf-loading-mask">
+        <div class="pdf-loading-spinner"></div>
+        <div class="pdf-loading-text">正在导出PDF，请稍候...</div>
+      </div>
+      <div class="container">
+        <!-- 下载PDF按钮 -->
+        <div style="text-align: right; margin-bottom: 15px;">
+          <button class="btn-primary" @click="downloadPDF">下载PDF</button>
+        </div>
 
-              <div v-if="loading" class="loading">
-                  <p>加载中...</p>
+        <!-- 公告内容显示 -->
+        <AnnouncementContent :currentDate="currentDate" />
+
+        <!-- 导出PDF的内容区域加id -->
+        <div >
+          <div v-if="statistics" class="statistics">
+            <div class="stats-grid">
+              <div class="stat-item">
+                <div class="stat-number">{{ statistics.total_signatures }}</div>
+                <div class="stat-label">已签字人数</div>
               </div>
-
-              <div v-else-if="signatures.length > 0" class="all-signatures">
-                  <div class="filter-controls">
-                      <input type="text" v-model="searchQuery" placeholder="搜索门牌号..." class="search-input">
-                      <select v-model="sortOption" class="sort-select" @change="sortSignatures">
-                          <option value="newest">最新签字在前</option>
-                          <option value="oldest">最早签字在前</option>
-                      </select>
-                  </div>
-                  
-                  <!-- 新增搜索结果统计 -->
-                  <div class="search-stats" v-if="searchQuery">
-                      <p>搜索结果：共找到 <span class="highlight">{{ filteredSignatures.length }}</span> 条匹配 "{{ searchQuery }}" 的记录</p>
-                  </div>
-                  <div class="search-stats" v-else>
-                      <p>共 <span class="highlight">{{ filteredSignatures.length }}</span> 条记录</p>
-                  </div>
-
-                  <div class="signatures-table">
-                      <div class="table-header">
-                          <div class="table-cell id-column">ID</div>
-                          <div class="table-cell name-column" style="display: none;">姓名</div>
-                          <div class="table-cell room-column">门牌号</div>
-                          <div class="table-cell date-column">签字时间</div>
-                      </div>
-
-                      <!-- 使用分页后的数据列表 -->
-                      <div v-for="signature in paginatedSignatures" :key="signature.id" class="table-row">
-                          <div class="table-cell id-column">{{ signature.id }}</div>
-                          <div class="table-cell name-column" style="display: none;">{{ signature.signature }}</div>
-                          <div class="table-cell room-column">{{ signature.room_number }}</div>
-                          <div class="table-cell date-column">{{ formatDate(signature.created_at) }}</div>
-                      </div>
-                  </div>
-
-                  <div class="pagination" v-if="totalPages > 1">
-                      <button class="page-btn" @click="currentPage = 1" :disabled="currentPage === 1">
-                          首页
-                      </button>
-                      <button class="page-btn" @click="currentPage--" :disabled="currentPage === 1">
-                          上一页
-                      </button>
-                      <span class="page-info">
-                          第 {{ currentPage }} / {{ totalPages }} 页
-                      </span>
-                      <button class="page-btn" @click="currentPage++" :disabled="currentPage === totalPages">
-                          下一页
-                      </button>
-                      <button class="page-btn" @click="currentPage = totalPages"
-                          :disabled="currentPage === totalPages">
-                          末页
-                      </button>
-                  </div>
-              </div>
-              
-              <!-- 没有数据时显示 -->
-              <div v-else class="no-signatures">
-                  <div class="empty-state">
-                      <div class="empty-icon">📋</div>
-                      <h3>暂无签字记录</h3>
-                      <p>目前还没有任何签字记录，快去邀请大家签字吧！</p>
-                      <button class="btn-primary" @click="goToAnnouncement">返回公告</button>
-                  </div>
-              </div>
+            </div>
+            <div class="progress-bar" style="display: none;">
+              <div class="progress-fill" :style="{ width: statistics.progress + '%' }"></div>
+            </div>
           </div>
-      </main>
-      <AppFooter />
+          <div class="signatures-header">
+            <h2>所有签字记录</h2>
+            <p class="subtitle">以下是所有已签字人员的信息列表</p>
+          </div>
+
+          <div v-if="loading" class="loading">
+            <p>加载中...</p>
+          </div>
+
+          <div v-else-if="signatures.length > 0" class="all-signatures">
+            <div class="signatures-image-grid">
+              <div v-for="(group, groupIdx) in signatureGroups" :key="'group-' + groupIdx" class="signature-group">
+                <div v-for="signature in group" :key="signature.id" class="signature-image-flex">
+                  <img v-if="signature.signature_image && signature.signature_image.length > 50"
+                    :src="'data:image/png;base64,' + signature.signature_image" alt="签名图片" class="signature-image" />
+                  <span v-else class="no-signature-image">无签名图片</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 没有数据时显示 -->
+          <div v-else class="no-signatures">
+            <div class="empty-state">
+              <div class="empty-icon">📋</div>
+              <h3>暂无签字记录</h3>
+              <p>目前还没有任何签字记录，快去邀请大家签字吧！</p>
+              <button class="btn-primary" @click="goToAnnouncement">返回公告</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+    </main>
+    <AppFooter />
   </div>
+  <PdfContent
+        v-show="false"
+        :statistics="statistics"
+        :signatures="signatures"
+        :loading="loading"
+        :currentDate="currentDate"
+        :paginatedSignatures="paginatedSignatures"
+        :formatDate="formatDate"
+        :goToAnnouncement="goToAnnouncement"
+      />
 </template>
 
 <script>
@@ -98,137 +81,182 @@ import axios from 'axios'
 import AppHeader from './AppHeader.vue'
 import AppFooter from './AppFooter.vue'
 import AnnouncementContent from './AnnouncementContent.vue'
+import PdfContent from './PdfContent.vue'
 import { apiUrl } from '../utils/api.js'
+import html2canvas from 'html2canvas'
+import jsPDF from 'jspdf'
 
 export default {
   name: 'AllSignatures',
   components: {
-      AppHeader,
-      AppFooter,
-      AnnouncementContent
+    AppHeader,
+    AppFooter,
+    AnnouncementContent,
+    PdfContent
   },
   data() {
-      return {
-          signatures: [],
-          filteredSignatures: [],
-          statistics: null,
-          loading: true,
-          currentDate: this.getCurrentDate(),
-          searchQuery: '',
-          sortOption: 'newest',
-          currentPage: 1,
-          itemsPerPage: 10  // 每页显示10条数据
-      }
+    return {
+      signatures: [],
+      filteredSignatures: [],
+      statistics: null,
+      loading: true,
+      currentDate: this.getCurrentDate(),
+      searchQuery: '',
+      sortOption: 'newest',
+      currentPage: 1,
+      itemsPerPage: 1000,  // 每页显示10条数据
+      pdfLoading: false // PDF导出loading遮罩
+    }
   },
   computed: {
-      // 计算总页数
-      totalPages() {
-          return Math.ceil(this.filteredSignatures.length / this.itemsPerPage)
-      },
-      // 计算当前页应该显示的数据
-      paginatedSignatures() {
-          const startIndex = (this.currentPage - 1) * this.itemsPerPage
-          return this.filteredSignatures.slice(startIndex, startIndex + this.itemsPerPage)
+    // 计算总页数
+    totalPages() {
+      return Math.ceil(this.filteredSignatures.length / this.itemsPerPage)
+    },
+    // 计算当前页应该显示的数据
+    paginatedSignatures() {
+      const startIndex = (this.currentPage - 1) * this.itemsPerPage
+      return this.filteredSignatures.slice(startIndex, startIndex + this.itemsPerPage)
+    },
+    signatureGroups() {
+      // 每3个分一组
+      const groups = [];
+      for (let i = 0; i < this.paginatedSignatures.length; i += 3) {
+        groups.push(this.paginatedSignatures.slice(i, i + 3));
       }
+      return groups;
+    }
   },
   watch: {
-      // 搜索时重置到第一页
-      searchQuery() {
-          this.filterSignatures()
-          this.currentPage = 1
-      },
-      // 排序变化时重新排序
-      sortOption() {
-          this.sortSignatures()
-      }
+    // 搜索时重置到第一页
+    searchQuery() {
+      this.filterSignatures()
+      this.currentPage = 1
+    },
+    // 排序变化时重新排序
+    sortOption() {
+      this.sortSignatures()
+    }
   },
   mounted() {
-      this.loadAllSignatures()
-      this.loadStatistics()
+    this.loadAllSignatures()
+    this.loadStatistics()
   },
   methods: {
-      async loadAllSignatures() {
-          try {
-              this.loading = true
-              const response = await axios.get(apiUrl('/all-signatures'))
-              this.signatures = response.data.signatures || []
-              this.filterSignatures()
-              this.sortSignatures()
-          } catch (error) {
-              console.error('加载所有签字信息失败:', error)
-              alert('加载签字记录失败，请重试')
-          } finally {
-              this.loading = false
-          }
-      },
-
-      async loadStatistics() {
-          try {
-              const response = await axios.get(apiUrl('/statistics'))
-              this.statistics = response.data
-          } catch (error) {
-              console.error('加载统计数据失败:', error)
-          }
-      },
-
-      // 过滤签名数据
-      filterSignatures() {
-          if (!this.searchQuery) {
-              this.filteredSignatures = [...this.signatures]
-              return
-          }
-
-          const query = this.searchQuery.toLowerCase()
-          this.filteredSignatures = this.signatures.filter(signature =>
-              // signature.signature.toLowerCase().includes(query) ||
-              signature.room_number.toLowerCase().includes(query)
-          )
-      },
-
-      // 排序签名数据
-      sortSignatures() {
-          switch (this.sortOption) {
-              case 'newest':
-                  this.filteredSignatures.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-                  break
-              case 'oldest':
-                  this.filteredSignatures.sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
-                  break
-              case 'nameAsc':
-                  this.filteredSignatures.sort((a, b) => a.signature.localeCompare(b.signature))
-                  break
-              case 'nameDesc':
-                  this.filteredSignatures.sort((a, b) => b.signature.localeCompare(a.signature))
-                  break
-              default:
-                  break
-          }
-      },
-
-      // 格式化日期显示
-      formatDate(dateString) {
-          if (!dateString) return '未知时间'
-          const date = new Date(dateString)
-          return date.toLocaleString('zh-CN', {
-              year: 'numeric',
-              month: '2-digit',
-              day: '2-digit',
-              hour: '2-digit',
-              minute: '2-digit'
-          })
-      },
-
-      goToAnnouncement() {
-          this.$router.push('/')
-      },
-
-      getCurrentDate() {
-          const now = new Date()
-          const year = now.getFullYear()
-          const month = now.getMonth() + 1
-          const day = now.getDate()
-          return `${year}年${month.toString().padStart(2, '0')}月${day.toString().padStart(2, '0')}日`
+    async loadAllSignatures() {
+      try {
+        this.loading = true
+        const response = await axios.get(apiUrl('/all-signatures'))
+        this.signatures = response.data.signatures || []
+        this.filterSignatures()
+        this.sortSignatures()
+      } catch (error) {
+        console.error('加载所有签字信息失败:', error)
+        alert('加载签字记录失败，请重试')
+      } finally {
+        this.loading = false
       }
+    },
+
+    async loadStatistics() {
+      try {
+        const response = await axios.get(apiUrl('/statistics'))
+        this.statistics = response.data
+      } catch (error) {
+        console.error('加载统计数据失败:', error)
+      }
+    },
+
+    // 过滤签名数据
+    filterSignatures() {
+      if (!this.searchQuery) {
+        this.filteredSignatures = [...this.signatures]
+        return
+      }
+
+      const query = this.searchQuery.toLowerCase()
+      this.filteredSignatures = this.signatures.filter(signature =>
+        // signature.signature.toLowerCase().includes(query) ||
+        signature.room_number.toLowerCase().includes(query)
+      )
+    },
+
+    // 排序签名数据
+    sortSignatures() {
+      switch (this.sortOption) {
+        case 'newest':
+          this.filteredSignatures.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+          break
+        case 'oldest':
+          this.filteredSignatures.sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+          break
+        case 'nameAsc':
+          this.filteredSignatures.sort((a, b) => a.signature.localeCompare(b.signature))
+          break
+        case 'nameDesc':
+          this.filteredSignatures.sort((a, b) => b.signature.localeCompare(a.signature))
+          break
+        default:
+          break
+      }
+    },
+
+    // 格式化日期显示
+    formatDate(dateString) {
+      if (!dateString) return '未知时间'
+      const date = new Date(dateString)
+      return date.toLocaleString('zh-CN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+    },
+
+    goToAnnouncement() {
+      this.$router.push('/')
+    },
+
+    getCurrentDate() {
+      const now = new Date()
+      const year = now.getFullYear()
+      const month = now.getMonth() + 1
+      const day = now.getDate()
+      return `${year}年${month.toString().padStart(2, '0')}月${day.toString().padStart(2, '0')}日`
+    },
+    downloadPDF() {
+      this.pdfLoading = true;
+      const element = document.getElementById('pdf-content')
+      if (!element) {
+        this.pdfLoading = false;
+        return
+      }
+      if (element) element.style.display = ''
+      import('html2pdf.js').then(html2pdf => {
+        html2pdf.default()
+          .set({
+            margin: 0,
+            filename: `签字记录_${this.currentDate}.pdf`,
+            image: { type: 'jpeg', quality: 1 },
+            html2canvas: { scale: 2, useCORS: true },
+            jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' },
+            pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+          })
+          .from(element)
+          .toPdf()
+          .get('pdf')
+          .save()
+          .then(() => {
+            if (element) element.style.display = 'none'
+            this.pdfLoading = false;
+          })
+          .catch(() => {
+            if (element) element.style.display = 'none'
+            this.pdfLoading = false;
+          })
+      })
+    }
   }
 }
 </script>
@@ -315,51 +343,42 @@ export default {
   font-size: 15px;
 }
 
-.signatures-table {
-  width: 100%;
-  border-collapse: collapse;
+/* 新增图片网格布局样式 */
+.signatures-image-grid {
+  display: flex;
+  flex-direction: column;
+  /* gap: 18px; */
   margin-bottom: 30px;
-  border-radius: 10px;
-  overflow: hidden;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 }
 
-.table-header {
+.signature-group {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  /* gap: 12px; */
+}
+
+.signature-image-flex {
   display: flex;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  font-weight: 600;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  border-radius: 8px;
 }
 
-.table-row {
-  display: flex;
-  border-bottom: 1px solid #eee;
-  transition: background-color 0.3s;
+.signature-image {
+  max-width: 100%;
+  max-height: 120px;
+  display: block;
+  margin: 0 auto;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  background: #fff;
 }
 
-.table-row:hover {
-  background-color: #f8f9fa;
-}
-
-.table-cell {
-  padding: 15px 20px;
-  text-align: left;
-}
-
-.id-column {
-  width: 10%;
-}
-
-.name-column {
-  width: 30%;
-}
-
-.room-column {
-  width: 25%;
-}
-
-.date-column {
-  width: 35%;
+.no-signature-image {
+  color: #bbb;
+  font-size: 14px;
+  font-style: italic;
 }
 
 .pagination {
@@ -445,7 +464,7 @@ export default {
 .stat-item {
   text-align: center;
   padding: 20px;
-  background: #f8f9fa;
+  background: white;
   border-radius: 12px;
   border: 1px solid #e9ecef;
 }
@@ -493,62 +512,119 @@ export default {
   box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
 }
 
+/* PDF导出loading遮罩层样式 */
+.pdf-loading-mask {
+  position: fixed;
+  z-index: 9999;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0,0,0,0.35);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.pdf-loading-spinner {
+  border: 6px solid #f3f3f3;
+  border-top: 6px solid #667eea;
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  animation: spin 1s linear infinite;
+  margin-bottom: 18px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.pdf-loading-text {
+  color: #fff;
+  font-size: 20px;
+  font-weight: 600;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
 @media (max-width: 768px) {
   .main-content {
-      padding: 100px 10px 80px 10px;
+    padding: 100px 10px 80px 10px;
   }
 
   .container {
-      margin: 0 10px;
-      padding: 20px;
+    margin: 0 10px;
+    padding: 20px;
   }
 
   .filter-controls {
-      flex-direction: column;
+    flex-direction: column;
   }
 
   .table-header {
-      display: none;
+    display: none;
   }
 
   .table-row {
-      flex-direction: column;
-      padding: 15px;
-      border-bottom: 2px solid #eee;
+    flex-direction: column;
+    padding: 15px;
+    border-bottom: 2px solid #eee;
   }
 
   .table-cell {
-      width: 100% !important;
-      padding: 8px 0;
+    width: 100% !important;
+    padding: 8px 0;
   }
 
   .table-cell::before {
-      font-weight: bold;
-      margin-right: 5px;
+    font-weight: bold;
+    margin-right: 5px;
   }
 
   .id-column::before {
-      content: "ID: ";
+    content: "ID: ";
   }
 
   .name-column::before {
-      content: "姓名: ";
+    content: "姓名: ";
   }
 
   .room-column::before {
-      content: "门牌号: ";
+    content: "门牌号: ";
   }
 
   .date-column::before {
-      content: "签字时间: ";
+    content: "签字时间: ";
   }
 
   .stats-grid {
-      grid-template-columns: 1fr;
+    grid-template-columns: 1fr;
   }
 
   .pagination {
-      flex-wrap: wrap;
+    flex-wrap: wrap;
   }
 }
+
+@media (max-width: 700px) {
+  .signature-row-flex {
+    background-color: white;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .signature-info {
+    min-width: 0;
+    width: 100%;
+    padding-left: 0;
+    margin-bottom: 10px;
+  }
+  .signature-image-flex {
+    width: 100%;
+    justify-content: flex-start;
+    margin-top: 0;
+  }
+}
+
 </style>

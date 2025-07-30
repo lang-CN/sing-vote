@@ -19,11 +19,24 @@ export default {
       isWechat: false
     }
   },
+  computed: {
+    needWechatCheck() {
+      const path = this.$route?.path || window.location.pathname
+      return !['/allSignatures', '/password-error'].includes(path)
+    }
+  },
+  watch: {
+    '$route.path': 'checkWechatBrowser'
+  },
   created() {
     this.checkWechatBrowser()
   },
   methods: {
     checkWechatBrowser() {
+      if (!this.needWechatCheck) {
+        this.isWechat = true
+        return
+      }
       this.isWechat = isWechatBrowser()
       if(window.location.hostname === 'localhost'){
         this.isWechat = true

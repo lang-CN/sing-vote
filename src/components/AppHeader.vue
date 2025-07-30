@@ -22,7 +22,9 @@ export default {
   padding: 20px 15px;
   text-align: center;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  width: 100%;
+  width: 100vw;
+  min-width: 100vw;
+  max-width: 100vw;
   position: fixed;
   top: 0;
   left: 0;

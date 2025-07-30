@@ -71,9 +71,12 @@ export default {
   color: #555;
   line-height: 1.6;
   margin-bottom: 10px;
+  margin-left: 10px;
+  margin-right: 10px;
+
 }
 .requirement-list {
-  background: #f8f9fa;
+  background: white;
   padding: 20px;
   border-radius: 10px;
   border-left: 4px solid #e74c3c;
