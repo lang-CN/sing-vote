@@ -242,6 +242,12 @@ export default {
         if (response.data.device_uuid && response.data.device_fingerprint) {
           localStorage.setItem('device_uuid', response.data.device_uuid);
           localStorage.setItem('device_fingerprint', response.data.device_fingerprint);
+
+          const deviceInfo = await getDeviceIdentity(response.data.device_uuid, response.data.device_fingerprint)
+          const response = await axios.post(apiUrl('/user-status'), deviceInfo)
+          if (response.data.hasSigned) {
+            this.$router.push('/signatures')
+          }
         }
 
         this.showMessage(response.data.message, 'success')

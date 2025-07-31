@@ -111,10 +111,28 @@ function generateFallbackFingerprint() {
 /**
  * 获取完整的设备标识信息
  */
-export async function getDeviceIdentity() {
-  const uuid = getDeviceUUID()
-  const fingerprint = await getDeviceFingerprint()
-  
+export async function getDeviceIdentity(device_uuid, device_fingerprint) {
+  const STORAGE_KEY_UUID = 'device_uuid';
+  const STORAGE_KEY_FP = 'device_fingerprint';
+
+  let uuid, fingerprint;
+
+  if (device_uuid && device_fingerprint) {
+    // 覆盖本地缓存
+    localStorage.setItem(STORAGE_KEY_UUID, device_uuid);
+    localStorage.setItem(STORAGE_KEY_FP, device_fingerprint);
+    uuid = device_uuid;
+    fingerprint = device_fingerprint;
+  } else {
+    uuid = getDeviceUUID();
+    // 优先取本地缓存的 device_fingerprint
+    fingerprint = localStorage.getItem(STORAGE_KEY_FP) || await getDeviceFingerprint();
+    // 如果本地没有缓存，则生成并存储
+    if (!localStorage.getItem(STORAGE_KEY_FP)) {
+      localStorage.setItem(STORAGE_KEY_FP, fingerprint);
+    }
+  }
+
   return {
     uuid,
     fingerprint,
