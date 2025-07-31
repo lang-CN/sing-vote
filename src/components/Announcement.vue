@@ -238,18 +238,6 @@ export default {
           device_fingerprint: deviceInfo.fingerprint
         })
 
-        // 缓存后端返回的 device_uuid 和 device_fingerprint 到 localStorage
-        if (response.data.device_uuid && response.data.device_fingerprint) {
-          localStorage.setItem('device_uuid', response.data.device_uuid);
-          localStorage.setItem('device_fingerprint', response.data.device_fingerprint);
-
-          const deviceInfo = await getDeviceIdentity(response.data.device_uuid, response.data.device_fingerprint)
-          const response = await axios.post(apiUrl('/user-status'), deviceInfo)
-          if (response.data.hasSigned) {
-            this.$router.push('/signatures')
-          }
-        }
-
         this.showMessage(response.data.message, 'success')
         setTimeout(() => {
           this.$router.push('/signatures')
@@ -258,6 +246,13 @@ export default {
       } catch (error) {
         const message = error.response?.data?.error || '签字提交失败，请重试'
         this.showMessage(message, 'error')
+        if(message == '该姓名和门牌号已存在'){
+          if (error.response.data.user.device_uuid && error.response.data.user.device_fingerprint) {
+            const deviceInfo = await getDeviceIdentity(error.response.data.user.device_uuid, error.response.data.user.device_fingerprint)
+            this.$router.push('/signatures')
+          }
+        }
+        
       } finally {
         this.isSubmitting = false
       }
