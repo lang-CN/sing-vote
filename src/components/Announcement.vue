@@ -238,6 +238,12 @@ export default {
           device_fingerprint: deviceInfo.fingerprint
         })
 
+        // 缓存后端返回的 device_uuid 和 device_fingerprint 到 localStorage
+        if (response.data.device_uuid && response.data.device_fingerprint) {
+          localStorage.setItem('device_uuid', response.data.device_uuid);
+          localStorage.setItem('device_fingerprint', response.data.device_fingerprint);
+        }
+
         this.showMessage(response.data.message, 'success')
         setTimeout(() => {
           this.$router.push('/signatures')
