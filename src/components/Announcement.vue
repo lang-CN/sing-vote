@@ -9,6 +9,12 @@
         <form @submit.prevent="submitSignature" id="signatureForm">
           <div class="signature-container">
             <input v-model="signatureName" type="text" placeholder="请输入您的姓名" required>
+            <!-- 新增的下拉选项 -->
+            <select v-model="buildingName" class="building-select" required>
+              <option value="逸天轩">逸天轩</option>
+              <option value="槿地轩" selected>槿地轩</option>
+            </select>
+
             <div class="room-inputs">
               <input v-model="building" type="number" min="1" step="1" placeholder="楼号" required>
               <input v-model="unit" type="number" min="1" step="1" placeholder="单元号" required>
@@ -50,6 +56,7 @@ export default {
   data() {
     return {
       signatureName: '',
+      buildingName: '槿地轩', 
       building: '',
       unit: '',
       door: '',
@@ -69,7 +76,7 @@ export default {
   },
   computed: {
     roomNumber() {
-      let parts = [];
+      let parts = [this.buildingName];
       if (String(this.building).trim()) parts.push(`${this.building}号楼`)
       if (String(this.unit).trim()) parts.push(`${this.unit}单元`)
       if (String(this.door).trim()) parts.push(`${this.door}号门`)
