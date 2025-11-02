@@ -10,7 +10,7 @@ export default {
   props: {
     title: {
       type: String,
-      default: '想云湾-逸天轩、槿地轩-业主投票'
+      default: '想云湾-逸天轩、槿地轩-业主签字'
     }
   }
 }
