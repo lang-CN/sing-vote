@@ -295,6 +295,21 @@ export default {
 </script>
 
 <style scoped>
+.building-select {
+  width: 100%;
+  padding: 12px 15px;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  font-size: 16px;
+  margin-bottom: 18px;
+  background-color: #fff;
+  transition: border-color 0.3s;
+}
+
+.building-select:focus {
+  outline: none;
+  border-color: #764ba2;
+}
 .page-wrapper {
   min-height: 100vh;
   display: flex;
