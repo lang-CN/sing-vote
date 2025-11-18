@@ -10,7 +10,7 @@ export default {
   props: {
     copyright: {
       type: String,
-      default: '© 2025 想云湾-逸天轩、槿地轩-全体业主'
+      default: '© 2025 想云湾-槿地轩-全体业主'
     }
   }
 }

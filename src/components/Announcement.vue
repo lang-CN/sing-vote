@@ -10,7 +10,7 @@
           <div class="signature-container">
             <input v-model="signatureName" type="text" placeholder="请输入您的姓名" required>
             <!-- 新增的下拉选项 -->
-            <select v-model="buildingName" class="building-select" required>
+            <select v-model="buildingName" class="building-select" required readonly>
               <option value="逸天轩">逸天轩</option>
               <option value="槿地轩" selected>槿地轩</option>
             </select>
